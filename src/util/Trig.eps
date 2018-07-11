@@ -1,0 +1,72 @@
+
+function EUDMoveLocation(locID, x, y) 
+{
+    dwwrite_epd(EPD(0x58DC60) + 5 * locID, x);
+    dwwrite_epd(EPD(0x58DC60) + 5 * locID + 1, y);
+    dwwrite_epd(EPD(0x58DC60) + 5 * locID + 2, x);
+    dwwrite_epd(EPD(0x58DC60) + 5 * locID + 3, y);
+}
+
+function setpcolor(pnum, color) 
+{
+    const pcolor_dst = 0x581D76 + 8 * pnum;
+    const mcolor_dst = 0x581DD6 + pnum;
+    bwrite(pcolor_dst, color);
+    bwrite(mcolor_dst, color);
+}
+/*
+function setHitPoint(unitID, value)
+{
+    dwwrite(0x65FD00 + 9808 + unitID * 4, value); 
+}
+
+function setShieldPoint(unitID, value)
+{
+    wwrite(0x65FD00 + 4352 + unitID * 2, value);
+}
+
+function setArmorPoint(unitID, value)
+{
+    bwrite(0x65FD00 + 456 + unitID * 1, value);
+}
+
+function setWeaponDamage(weaponID, value)
+{
+    wwrite(0x6564E0 + 2512 + weaponID * 2, value);
+}
+
+function IsLocationAtLocation(loc1, loc2)
+{// loc1(small) inside loc2(big)
+    const l = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 0);
+    const t = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 1);
+    const r = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 2);
+    const d = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 3);
+
+    const l2 = dwread_epd(EPD(0x58DC60) + 5 * loc2 + 0);
+    const t2 = dwread_epd(EPD(0x58DC60) + 5 * loc2 + 1);
+    const r2 = dwread_epd(EPD(0x58DC60) + 5 * loc2 + 2);
+    const d2 = dwread_epd(EPD(0x58DC60) + 5 * loc2 + 3);
+    if(l > l2 && t > t2 && r < r2 && d < d2)
+        return 1;
+    else
+        return 0;
+}
+
+
+function getLocationXY(loc1)
+{// loc1(small) inside loc2(big)
+    const l = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 0);
+    const t = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 1);
+    const r = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 2);
+    const d = dwread_epd(EPD(0x58DC60) + 5 * loc1 + 3);
+
+    return l, t, r, d;
+}
+
+function getDeath(targetPlayer, targetUnit)
+{
+    for(var i=0; i<256; i++)
+        if(Deaths(targetPlayer, Exactly, i, targetUnit))
+            return i;
+}
+*/

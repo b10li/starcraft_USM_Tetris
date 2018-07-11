@@ -1,0 +1,240 @@
+
+// 테트리스 블록 unitID
+// 0 금지, dont use marine, unitid 0
+const BLOCK_O = 128;
+const BLOCK_I = 129;
+const BLOCK_S = 215;
+const BLOCK_Z = 216;
+const BLOCK_L = 217;
+const BLOCK_J = 218;
+const BLOCK_T = 219;
+const FLOOR_B = 1; // invisible floor
+const BLOCKED = 2; // stuck
+const ENEMY_B = 3; // obstacle
+const BLOCKlist = [BLOCK_O, BLOCK_I, BLOCK_S, BLOCK_Z, BLOCK_L, BLOCK_J, BLOCK_T];
+
+
+//https://t1.daumcdn.net/cfile/tistory/113482444EBBB18E1A
+function getBlockXYArray(_arr, blockType, rotateType)
+{//좌표배열 xy,xy,xy ...
+	//if (DEBUGMODE) DisplayText("GetArray");
+	const tetrisarr = EUDArray.cast(_arr);
+	if (blockType == BLOCK_O) {
+		if(rotateType == 0){// ㅁ
+			const arr = [-1,0,  0,0,  -1,-1,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){
+			const arr = [-1,0,  0,0,  -1,-1,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){
+			const arr = [-1,0,  0,0,  -1,-1,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){
+			const arr = [-1,0,  0,0,  -1,-1,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+
+	if (blockType == BLOCK_I) {
+		if(rotateType == 0){ // ㅡ
+			const arr = [-2,0,  -1,0,  0,0,  +1,0];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){ // I
+			const arr = [0,-2,  0,-1,  0,0,  0,+1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){ // ㅡ
+			const arr = [-2,0,  -1,0,  0,0,  +1,0];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){ // I
+			const arr = [0,-2,  0,-1,  0,0,  0,+1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+
+	if (blockType == BLOCK_S) {
+		if(rotateType == 0){ // s
+			const arr = [0,0,  1,0,  -1,-1,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){ // ss
+			const arr = [0,1,  0,0,  1,0,  1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){ // s
+			const arr = [0,0,  1,0,  -1,-1,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){ // ss
+			const arr = [0,1,  0,0,  1,0,  1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+
+	if (blockType == BLOCK_Z) {
+		if(rotateType == 0){ // z
+			const arr = [-1,0,  0,0,  0,-1,  1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){ // zz
+			const arr = [1,1,  0,0,  1,0,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){ // z
+			const arr = [-1,0,  0,0,  0,-1,  1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){ // zz
+			const arr = [1,1,  0,0,  1,0,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+
+	if (blockType == BLOCK_L) {
+		if(rotateType == 0){ // ┌
+			const arr = [-1,0,  0,0,  1,0,  -1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){ // └
+			const arr = [0,1,  0,0,  0,-1,  1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){ // ┘
+			const arr = [-1,0,  0,0,  1,0,  1,1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){ // ┐
+			const arr = [-1,1,  0,1,  0,0,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+
+	if (blockType == BLOCK_J) {
+		if(rotateType == 0){ // ┐
+			const arr = [-1,0,  0,0,  1,0,  1,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){ // ┌
+			const arr = [0,1,  0,0,  0,-1,  1,1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){ // └
+			const arr = [-1,0,  0,0,  1,0,  -1,1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){ // ┘
+			const arr = [-1,-1,  0,1,  0,0,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+
+	if (blockType == BLOCK_T) {
+		if(rotateType == 0){ // ┬
+			const arr = [-1,0,  0,0,  1,0,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 1){ // ├
+			const arr = [0,1,  0,0,  0,-1,  1,0];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 2){ // ┴
+			const arr = [-1,0,  0,0,  1,0,  0,1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+		if(rotateType == 3){ // ┤
+			const arr = [-1,0,  0,1,  0,0,  0,-1];
+			for(var i=0; i<8; i++)
+				tetrisarr[i]=arr[i];
+			
+			return 0;
+		}
+	}
+	//if (DEBUGMODE) DisplayText("Array Error");
+	return 1;
+}

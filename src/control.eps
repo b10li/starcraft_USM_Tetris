@@ -1,0 +1,51 @@
+
+const KeyCount = 98;
+const KeyUnit = 200;
+// 방향키는 연속
+// 스페기는 연속 방지
+// 회전키는 단일 
+function getDeath(player, targetUnit)
+{
+	if(Deaths(player, Exactly, 0, targetUnit))
+		return 0;
+    for(var i=1; i<=64; i=i*2)
+        if(Deaths(player, Exactly, i, targetUnit))
+        	return i;
+}
+
+function KeyRecog(player)
+{// file 'main.edd'
+	// keyboard recognization
+	const keyboard = getDeath(player, KeyUnit);
+	
+	if(Switch(player, Cleared))
+	{// key delay
+		if(keyboard) SetSwitch(player, Set);
+		//pressed sth
+		if(1 == keyboard) return 1;
+		else if(2 == keyboard) return 2;
+		else if(4 == keyboard) return 4;
+		else if(8 == keyboard) return 8;
+		else if(16 == keyboard) return 16;
+		else if(32 == keyboard) return 32;
+		else if(64 == keyboard) return 64;
+	}
+	else if(!keyboard && Switch(player, Set))
+	{// key up
+		SetSwitch(player, Clear);
+	}
+
+	if(keyboard)
+	{// resend input
+		if(Deaths(player, AtLeast, 3, KeyCount))
+		{
+			SetDeaths(player, SetTo, 0, KeyCount);
+			if(keyboard == 2)
+				return 2;
+			if(keyboard == 8)
+				return 8;
+		}
+		else SetDeaths(player, Add, 1, KeyCount);
+	}
+	return 0;
+}

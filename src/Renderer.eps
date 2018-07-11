@@ -1,0 +1,222 @@
+/*------------------------------------
+제일 아랫칸은 안 보이는 1로 채워져있음.
+00000
+00000
+00000
+00000
+11111 예시
+floor line is 1. stuck purpose
+-----------------------------------*/
+import util.Trig;
+//import customText3 as ct;
+const DamnLineFlag = 223;
+
+const size_X = 10;
+const size_Y = 23;
+
+const B_Type = EUDArray(6); // 블록 종류
+const B_Rotation = EUDArray(6); // 블록 회전
+const B_Type_Next = EUDArray(6); // 다음 블록
+const B_Type_NNext = EUDArray(6); // 다다음 블록
+const B_Type_Count = EUDArray(6); // 블록 교체 카운트
+const B_Type_Hold = EUDArray(6); // 블록 저장
+
+const PlayArea = EUDArray(size_X * size_Y *6); // 현재 게임판
+
+const B_arrayX = EUDArray(6); // 블록 배열 x,y
+const B_arrayY = EUDArray(6);
+//Renderer, main 동시선언 
+
+const KilledLine = EUDArray(4*6);
+const fillLoc = $L('draw');
+const scale = 16;
+var x_offset, y_offset; // 실제 xy
+
+function MapOffset(player) 
+{
+
+    var xb, yb;
+    if(player == 0) 
+    {
+    	xb = 8; 
+    	yb = 34;
+    } else if(player == 1) 
+    {
+    	xb = 30; 
+    	yb = 34;
+    } else if(player == 2) 
+    {
+    	xb = 52; 
+    	yb = 34;
+    } else if(player == 3) 
+    {
+    	xb = 8; 
+    	yb = 51;
+    } else if(player == 4) 
+    {
+    	xb = 30; 
+    	yb = 51;
+    } else if(player == 5) 
+    {
+    	xb = 52; 
+    	yb = 51;
+    }
+    x_offset = xb * 32 + 8;
+    y_offset = yb * 32 + 8;
+}
+
+function setPlayArea(player, x, y, value)
+{
+    PlayArea[x + y * size_X  + (size_X*size_Y)*player] = value;
+}
+
+function getPlayArea(player, x, y)
+{
+    return PlayArea[x + y * size_X  + (size_X*size_Y)*player];
+}
+
+function Fill(x, y, blockType);
+function CreateLine(player);
+
+function Update(player) 
+{
+    for (var y = 0; y < size_Y; y++) 
+    {
+        for (var x = 0; x < size_X; x++) 
+        {
+            const after = getPlayArea(player, x, y);
+            Fill(x, y, after, player);
+        }
+    }
+}
+
+function Fill(x, y, blockType, player) 
+{
+    if(blockType == -1) return;
+    Trig.EUDMoveLocation(fillLoc, x * scale + x_offset, y * scale + y_offset);
+    RemoveUnitAt(1, '(any unit)', fillLoc + 1, $AllPlayers);
+    if(blockType > 1) 
+    {
+        if(blockType == 2) // inactive
+            CreateUnitWithProperties(1, 2, fillLoc + 1, $P7, UnitProperty(invincible = true));
+        else if(blockType == 3) // obstacle block
+            CreateUnitWithProperties(1, 1, fillLoc + 1, $P8, UnitProperty(invincible = true));
+        else // active
+            CreateUnitWithProperties(1, blockType, fillLoc + 1, player, UnitProperty(invincible = true));
+    }
+}
+
+
+function Clear(player) 
+{
+    for (var y = 0; y < size_Y; y++) 
+        for (var x = 0; x < size_X; x++) 
+            setPlayArea(player, x, y, 0);
+}
+
+function InitBXY(player)
+{
+    B_arrayX[player] = 5;
+    B_arrayY[player] = 2;
+}
+
+function FillFloor(player)
+{
+    // fill floor
+    for (var x = 0; x < size_X; x++) 
+        setPlayArea(player, x, size_Y - 1, 1);
+}
+
+function CheckLine(player)
+{
+    var Q = 0;
+    for (var y = size_Y - 2; y > 0; y--) 
+    {// except floor
+        var check = 1;
+        for (var x = 0; x < size_X; x++)
+        {// check horizantal line
+            if(!getPlayArea(player, x, y))
+            {
+                check = 0;
+                break;
+            }
+        }
+        if(check)
+        {// line is full
+            for (var x = 0; x < size_X; x++)
+            {// kill line
+                Trig.EUDMoveLocation(fillLoc, x * scale + x_offset, y * scale + y_offset);
+                RemoveUnitAt(1, '(men)', fillLoc+1, $P7);
+                // effect
+                CreateUnit(1, 47, fillLoc+1, $P7);
+            }
+            KillUnit(47, $P7);
+            SetResources(player, Add, 1, Ore);
+            // remember
+            KilledLine[Q + player*4] = y;
+            Q++;
+        }
+    }
+    setcurpl(player);
+    //sound effect
+    if(Q < 2);
+    else if(Q == 2) PlayWAV('sound\\Terran\\Medic\\TMdPss05.wav');
+    else if(Q == 3) PlayWAV('sound\\Terran\\Medic\\TMdPss01.wav');
+    else PlayWAV('sound\\Terran\\Medic\\TMdPss03.wav');
+
+    if(Q >= 3) 
+    {// line up
+        EUDPlayerLoop()();
+        const cp = getcurpl();
+        PlayWAV('sound\\Misc\\ZBldgPlc.wav');
+        if(player == 0) DisplayText("\x13 \x08 빨강\x1b의 공격!");
+        else if(player == 1) DisplayText("\x13 \x0e 파랑\x1b의 공격!");
+        else if(player == 2) DisplayText("\x13 \x0f 연두\x1b의 공격!");
+        else if(player == 3) DisplayText("\x13 \x10 보라\x1b의 공격!");
+        else if(player == 4) DisplayText("\x13 \x11 주황\x1b의 공격!");
+        else if(player == 5) DisplayText("\x13 \x15 똥색\x1b의 공격!");
+        DisplayText("\x13\x16(3줄 이상 콤보시)");
+        if(cp != player && cp < 6)
+            SetDeaths(cp, Add, 1, DamnLineFlag);
+        EUDEndPlayerLoop();
+    }
+
+    for (var i = 0; i < 4; i++) 
+    {// remembered lines
+        if(KilledLine[i + player*4]) 
+        {// pull line
+            for (var y = KilledLine[i + player*4] + i; y > 0; y--) {
+                for (var x = 0; x < size_X; x++) {
+                    setPlayArea(player, x, y, getPlayArea(player, x, y - 1));
+                }
+            }
+        } else break;
+        // reset
+        KilledLine[i + player*4] = 0;
+        if(i)
+        {// combo addition
+            SetResources(player, Add, 1, Ore);
+            DisplayText('\x13\x1bCombo!');
+        }
+    }
+}
+
+function CreateLine(player)
+{
+    const line = [3,3,3,3, 3,3,3,3, 3,3];
+    const temp = EUDArray(10);
+    line[rand()%10] = 0;
+
+    for (var y = size_Y - 2; y > 0; y--) 
+    {// except floor
+        var check = 1;
+        for (var x = 0; x < size_X; x++)
+        {// check horizantal line
+            temp[x] = getPlayArea(player, x, y);
+            setPlayArea(player, x, y, line[x]);
+            line[x] = temp[x];
+            if(line[x]) check = check & 0;
+        }
+        if(check) break;
+    }
+}

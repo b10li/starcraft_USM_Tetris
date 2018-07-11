@@ -1,0 +1,38 @@
+import BlockType as bt;
+
+function UnitDat(unitId, graphicsId)
+{
+	// unit size l, u, r, d
+    wwrite(0x65FD00 + 6856 + unitId * 8, 5);
+    wwrite(0x65FD00 + 6858 + unitId * 8, 5);
+    wwrite(0x65FD00 + 6860 + unitId * 8, 5);
+    wwrite(0x65FD00 + 6862 + unitId * 8, 5);
+    // staredit placement h, w
+    // dwwrite(0x65FD00 + 11106 + unitId * 4, 10);
+    // dwwrite(0x65FD00 + 11104 + unitId * 4, 10);
+    // graphics
+    bwrite(0x65FD00 + 18424 + unitId * 1, graphicsId);
+}
+
+function ImageDat(imageId, drawFuction)
+{
+	// script id
+	dwwrite(0x666778 + 34000 + imageId * 4, 89);
+	// gfx turn - disable
+	bwrite(0x666778 + 33000 + imageId * 1, 0);
+	// draw function
+	bwrite(0x666778 + 14000 + imageId * 1, drawFuction);
+}
+
+function DatEdit()
+{
+	ImageDat(399, 16); // P gas orb 1, stuck blocks, hallu
+	ImageDat(400, 0); // P gas orb 2, stuck blocks, default
+	ImageDat(5, 0); // broodling, obstackle blocks, 
+
+	for(var i=0; i<7; i++)
+		UnitDat(bt.BLOCKlist[i], 134); // to P gas orb 2
+	UnitDat(2, 133); // to P gas orb 1
+	UnitDat(1, 1); // to broodling
+	UnitDat(47, 48); // to scarb
+}

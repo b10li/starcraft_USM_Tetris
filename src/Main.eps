@@ -1,0 +1,602 @@
+/*- Main.eps ----------------------------
+sheun_t_@naver.com
+
+0000 맵 배열의 제일 아래에 
+0000 1(0이 아닌)블록을 배치해
+0000 충돌시 굳히도록 함.
+1111
+
+내리기: 계속 아래키
+자동 내리기: 일정시간 마다 아래키
+---------------------------------------*/
+import customText3 as ct;
+import Renderer as rd;
+import BlockType as bt;
+import util.Trig;
+import control;
+import EUDEdit;
+
+// get block shape, global for optimization
+const blockXYArray = EUDArray(8);
+
+const GameFlag = 97;
+const SoloFlag = 221;
+const NewBlockFlag = 225;
+const EndGameFlag = 222;
+const PreventPowerD = 99;
+const PowerDownFlag = 100;
+const UpdateFlag = 199;
+const UpdateHoldFlag = 198;
+
+const DeathTimer = 224;
+var MaximumTime = 48;
+
+const PlayerView = [$L('P1'), $L('P2'), $L('P3'), $L('P4'), $L('P5'), $L('P6')];
+
+function LeaderBoardMSG();
+function NewTetris(player);
+function IsOutSide(bX, bY);
+function IsCollide(bX, bY, blockType);
+function IsStuck(player, iX, iY, iRotate);
+function KeyControl(player);
+function DoPowerDown(player);
+function DoAutoDown(player);
+function DeathCountDown(maxTime);
+function DrawNextBlock(player);
+function DrawHoldBlock(player);
+function SoloMsg();
+// -------------------------------------------------------------------------------------
+function onPluginStart()
+{
+	randomize();
+	EUDEdit.DatEdit();
+	//Trig.setpcolor($P8, 8);
+
+	EUDPlayerLoop()();
+	const player = getcurpl();
+	if(player < 6)
+	{
+		// initial settings
+		rd.B_Type_Next[player] = rand()%7;
+		rd.FillFloor(player);
+		ct.printP(player, '\x13\x0710초 뒤 시작');
+		CenterView(PlayerView[player]+1);
+	}
+	EUDEndPlayerLoop();
+	LeaderBoardMSG();
+	SetCountdownTimer(SetTo, 10);
+}
+
+
+function beforeTriggerExec() 
+{// main code
+	// start of ct Print
+	const chatPtr = dwread_epd(EPD(0x640B58)); 
+
+    // solo play check - reset
+    SetDeaths($P8, SetTo, 0, SoloFlag);
+
+    for(var player=0; player<6; player++)
+    {
+    	if(!playerexist(player)) continue;
+    	if(Deaths(player, Exactly, 2, EndGameFlag)) continue;
+    	SetDeaths($P8, Add, 1, SoloFlag);
+
+    	if(Deaths(player, Exactly, 1, PreventPowerD) && Deaths(player, Exactly, 0, PowerDownFlag))
+    	{// prevent continuous
+    		SetDeaths(player, SetTo, 0, PreventPowerD);
+    	}
+
+    	ct.printP(player, '　　　\x04--- 조작 ---');
+		ct.printP(player, '　　　\x1b저장: \x07Q \x1b회전: \x07W E ');
+		ct.printP(player, '　　　\x1b이동: \x07I O P ');
+		ct.printP(player, '　　　\x1b내리기: \x07SPACE');
+		
+    	rd.MapOffset(player); // for render & checkline
+	    
+	    for(var i=6; i>0; i--)
+	    {
+	    	if(Deaths(player, Exactly, i, rd.DamnLineFlag))
+	    	{// attack alarm
+	    		if(!Bring($P7, Exactly, i, 36, PlayerView[player]+1))
+	    		{
+	    			GiveUnits(i, 36, $P8, PlayerView[player]+1, $P7);
+	    			break;
+	    		}
+	    	}
+    	}
+		if(Deaths(player, Exactly, 1, UpdateHoldFlag))
+		{
+			SetDeaths(player, SetTo, 0, UpdateHoldFlag);
+    		DrawHoldBlock(player);
+    	}
+	    if(Deaths(player, Exactly, 1, NewBlockFlag))
+	    {// make new block
+    		setcurpl(player);
+			PlayWAV('sound\\glue\\mouseover.wav');
+	    	for(var i=6; i>0; i--) 
+	    	{
+		    	if(Deaths(player, AtLeast, 1, rd.DamnLineFlag))
+		    	{// make obstacle line
+		    		SetDeaths(player, Subtract, 1, rd.DamnLineFlag);
+		    		rd.CreateLine(player);
+		    		SetDeaths(player, SetTo, 1, UpdateFlag);
+		    		// reset alarm
+		    		GiveUnits(1, 36, $P7, PlayerView[player]+1, $P8);
+		    	}
+		    	else
+		    		break;
+		    }
+	    	SetDeaths(player, SetTo, 0, NewBlockFlag);
+	    	SetDeaths(player, SetTo, MaximumTime, DeathTimer);
+
+	    	if(rd.getPlayArea(player, 5, 2)) 
+	    	{// gameover
+	    		SetDeaths(player, SetTo, 1, EndGameFlag);
+	    	}
+
+	    	rd.CheckLine(player); // line checker
+	    	LeaderBoardMSG(); // renew leaderboard
+	    	rd.InitBXY(player); // new block location
+	    	RemoveUnitAt(All, '(any unit)', PlayerView[player]+1, player);
+			NewTetris(player); // new block
+			DrawNextBlock(player);
+
+			SetDeaths(player, SetTo, 1, UpdateFlag);
+	    }
+
+	    if(rd.B_Type[player] && DeathCountDown(player, MaximumTime))
+	    {// auto down
+	    	DoAutoDown(player);
+	    	rd.Update(player);
+	    }
+
+	    if(Deaths($P7, Exactly, 1, GameFlag))
+	    {// when game starts
+			if(KeyControl(player))
+			{// key recog
+				SetDeaths(player, SetTo, 1, UpdateFlag);
+			}
+		}
+
+	    if(Deaths(player, Exactly, 1, PowerDownFlag))
+	    {// power down
+	    	SetDeaths(player, SetTo, 0, PowerDownFlag);
+	    	DoPowerDown(player);
+	    }
+
+    	if(Deaths(player, Exactly, 1, UpdateFlag))
+    	{// renew board
+    		SetDeaths(player, SetTo, 0, UpdateFlag);
+    		rd.Update(player);
+    	}
+
+		if(Deaths(player, Exactly, 1, EndGameFlag))
+    	{// game over
+    		SetDeaths(player, SetTo, 2, EndGameFlag);
+    		GiveUnits(All, '(any unit)', player, PlayerView[player]+1, $P12);
+	    	GiveUnits(All, '(men)', $AllPlayers, PlayerView[player]+1, $P12);
+    	}
+    }
+
+    if(Deaths($P8, Exactly, 1, SoloFlag) && Deaths($P8, Exactly, 0, 222))
+    {// solo detect
+    	SetDeaths($P8, SetTo, 1, 222);
+    	SoloMsg();
+	}
+
+    if(CountdownTimer(Exactly, 0) && Deaths($P7, Exactly, 1, GameFlag))
+    {// faster
+    	SetCountdownTimer(SetTo, 60);
+    	if(MaximumTime > 8)
+    	{
+    		
+    		
+    		EUDPlayerLoop()();
+    		ct.printError(getcurpl()); 
+    		ct.chatprint(12,'\x07속도가 빨라집니다.'); 
+	    	SetResources(getcurpl(), Add, 1, Gas);
+	    	EUDEndPlayerLoop();
+	    	MaximumTime = MaximumTime - 3;
+    	}
+    }
+    else if(CountdownTimer(Exactly, 0) && Deaths($P7, Exactly, 0, GameFlag))
+    {// game start
+    	SetDeaths($P7, SetTo, 1, GameFlag);
+
+    	EUDPlayerLoop()();
+    	const player = getcurpl();
+    	if(player < 6)
+  	  	{
+    		ct.printP(player, '\x13\x07게임 시작!');
+    		PlayWAV('sound\\Protoss\\ZEALOT\\PZeRdy00.WAV');
+    		// new block
+	    	rd.InitBXY(player);
+			NewTetris(player);
+		}
+		EUDEndPlayerLoop();
+    }
+    // End of ct Print
+	dwwrite_epd(EPD(0x640B58), chatPtr);
+}
+
+function afterTriggerExec() 
+{
+	// eudturbo
+    SetMemory(0x6509A0, SetTo, 0);  
+}
+// -------------------------------------------------------------------------------------
+function DeathCountDown(player, maxTime)
+{
+	if(Deaths(player, Exactly, 0, DeathTimer))
+	{
+		SetDeaths(player, SetTo, maxTime, DeathTimer);
+		return 1;
+	}
+	else 
+	{//if(Deaths($P7, AtLeast, 1, DeathTimer))
+		SetDeaths(player, Subtract, 1, DeathTimer);
+		return 0;
+	}
+}
+
+function NewTetris(player)
+{
+	rd.B_Type[player] = bt.BLOCKlist[(rd.B_Type_Next[player] + rd.B_Type_Count[player])%7];
+	rd.B_Rotation[player] = 0;
+	// ++
+	rd.B_Type_Count[player] = rd.B_Type_Count[player] + 1;
+	if(rd.B_Type_Count[player] == 3)
+	{
+		rd.B_Type_Next[player] = rd.B_Type_NNext[player];
+		rd.B_Type_NNext[player] = rand()%7;
+		rd.B_Type_Count[player] = 0;
+	}
+
+	if(!rd.B_Type[player]) return;
+
+	// get block shape
+	if(bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]))
+	{// block error
+		DisplayText('Error: NewTetris');
+		return;
+	}
+	for(var i=0; i<4; i++)
+	{// mark block at board
+		const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+		const bY = rd.B_arrayY[player] + blockXYArray[i*2 + 1];
+		rd.setPlayArea(player, bX, bY, rd.B_Type[player]);
+	}
+}
+
+function IsOutSide(bX, bY)
+{
+	if(bX >= rd.size_X || bY >= rd.size_Y)
+		return true;
+	else
+		return false;
+}
+
+function IsCollide(bX, bY, blockType, player)
+{
+	if(rd.getPlayArea(player, bX, bY) != blockType 
+		&& rd.getPlayArea(player, bX, bY))
+		return true;
+	else
+		return false;
+}
+
+function IsStuck(player, iX, iY, iType, iRotate)
+{
+	// get block shape
+	const tempXYArray = EUDArray(8);
+	if(bt.getBlockXYArray(tempXYArray, iType, iRotate))
+	{// getter error
+		DisplayText('Error: IsStuck');
+		return 1;
+	}
+	// check block
+	for(var i=0; i<4; i++)
+	{
+		const bX = iX + tempXYArray[i*2];
+		const bY = iY + tempXYArray[i*2 + 1];
+		if(IsOutSide(bX, bY))
+			return 1;
+		if(IsCollide(bX, bY, iType, player))
+			return 2;
+	}
+	return 0;
+}
+
+function KeyControl(player)
+{
+	// get keyboard val
+	const keyValue = control.KeyRecog(player);
+	if(keyValue)
+	{
+		setcurpl(player);
+		if(Deaths(player, AtMost, 6, DeathTimer))
+		{// infinity - adding control time
+			SetDeaths(player, SetTo, 6, DeathTimer);
+		}
+		// key press sound effect
+		PlayWAV('sound\\glue\\mouseover.wav');
+		if(!bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]))
+		{
+			for(var i=0; i<4; i++)
+			{// delete previous block
+				const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+				const bY = rd.B_arrayY[player] + blockXYArray[i*2 + 1];
+				rd.setPlayArea(player, bX, bY, 0);
+			}
+		}
+
+		if(keyValue == 4)
+		{// O - down
+			const m = IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player] +1, rd.B_Type[player], rd.B_Rotation[player]);
+			if(m == 0) 
+			{// movable
+				rd.B_arrayY[player] = rd.B_arrayY[player] +1;
+			}
+			else if (m == 2)
+			{// collide
+				SetDeaths(player, SetTo, 1, NewBlockFlag); // need new block
+			}
+		} 
+		else if(keyValue == 32) 
+		{// E - r rotate
+			if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player], rd.B_Type[player], (rd.B_Rotation[player] + 1)%4 ))
+			{
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+			else if(!IsStuck(player, rd.B_arrayX[player]+1, rd.B_arrayY[player], rd.B_Type[player], (rd.B_Rotation[player] + 1)%4 ))
+			{// ro + direction
+				rd.B_arrayX[player] = rd.B_arrayX[player] +1;
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+			else if(!IsStuck(player, rd.B_arrayX[player]-1, rd.B_arrayY[player], rd.B_Type[player], (rd.B_Rotation[player] + 1)%4 ))
+			{// ro + direction
+				rd.B_arrayX[player] = rd.B_arrayX[player] -1;
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+			else if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player]+1, rd.B_Type[player], (rd.B_Rotation[player] + 1)%4 ))
+			{// ro + direction
+				rd.B_arrayY[player] = rd.B_arrayY[player] +1;
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+		} else if(keyValue == 1) 
+		{// W - L rotate
+			if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player], rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
+			{
+				rd.B_Rotation[player] = (4 + rd.B_Rotation[player] - 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+			else if(!IsStuck(player, rd.B_arrayX[player]+1, rd.B_arrayY[player], rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
+			{// ro + direction
+				rd.B_arrayX[player] = rd.B_arrayX[player] +1;
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+			else if(!IsStuck(player, rd.B_arrayX[player]-1, rd.B_arrayY[player], rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
+			{// ro + direction
+				rd.B_arrayX[player] = rd.B_arrayX[player] -1;
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+			else if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player]+1, rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
+			{// ro + direction
+				rd.B_arrayY[player] = rd.B_arrayY[player] +1;
+				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				// renew block 
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+			}
+		} 
+		else if(keyValue == 8) 
+		{// P - right
+			if(!IsStuck(player, rd.B_arrayX[player] +1, rd.B_arrayY[player], rd.B_Type[player], rd.B_Rotation[player])) 
+				rd.B_arrayX[player] = rd.B_arrayX[player] +1;
+		} else if(keyValue == 2) 
+		{// I - left
+			if(!IsStuck(player, rd.B_arrayX[player] -1, rd.B_arrayY[player], rd.B_Type[player], rd.B_Rotation[player])) 
+				rd.B_arrayX[player] = rd.B_arrayX[player] -1;
+		} else if(keyValue == 16 && Deaths(player, Exactly, 0, PreventPowerD)) 
+		{// SP - powerdown
+			SetDeaths(player, SetTo, 1, PreventPowerD);
+			SetDeaths(player, SetTo, 1, PowerDownFlag);
+			return 1;
+		}
+		 else if(keyValue == 64) 
+		{// Q - Hold
+			if(rd.B_Type_Hold[player])
+			{// check placeability
+				//if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player], rd.B_Type_Hold[player], 0))
+				//{// swap and get block
+					rd.InitBXY(player); // new block location
+					const temp = rd.B_Type[player];
+					rd.B_Type[player] = rd.B_Type_Hold[player];
+					rd.B_Type_Hold[player] = temp;
+					bt.getBlockXYArray(blockXYArray, rd.B_Type[player], 0);
+					rd.B_Rotation[player] = 0;
+					SetDeaths(player, SetTo, 1, UpdateHoldFlag);
+				//}
+			} else 
+			{ // empty hold
+				rd.B_Type_Hold[player] = rd.B_Type[player];
+				SetDeaths(player, SetTo, 1, UpdateHoldFlag);
+				SetDeaths(player, SetTo, 1, NewBlockFlag);
+				return 1;
+			}
+
+		}
+
+		for(var i=0; i<4; i++)
+		{// mark block to board
+			const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+			const bY = rd.B_arrayY[player] + blockXYArray[i*2 + 1];
+			if(Deaths(player, Exactly, 1, NewBlockFlag))
+			{
+				rd.setPlayArea(player, bX, bY, bt.BLOCKED); // stuck
+			}
+			else
+				rd.setPlayArea(player, bX, bY, rd.B_Type[player]);
+		}
+		return 1;
+	}
+	return 0;
+}
+
+function LeaderBoardMSG()
+{
+	LeaderBoardResources(Ore, '\x1b점수'); // renew leaderboard
+}
+
+function DrawNextBlock(player)
+{
+	const tempXYArray = EUDArray(8);
+	const NextBlockList = EUDArray(3);
+	// get continuous blocks
+	if(rd.B_Type_Count[player] == 0)
+	{
+		NextBlockList[0] = bt.BLOCKlist[rd.B_Type_Next[player]];
+		NextBlockList[1] = bt.BLOCKlist[(rd.B_Type_Next[player] + 1)%7];
+		NextBlockList[2] = bt.BLOCKlist[(rd.B_Type_Next[player] + 2)%7];
+	} else if(rd.B_Type_Count[player] == 1)
+	{
+		NextBlockList[0] = bt.BLOCKlist[(rd.B_Type_Next[player] + 1)%7];
+		NextBlockList[1] = bt.BLOCKlist[(rd.B_Type_Next[player] + 2)%7];
+		NextBlockList[2] = bt.BLOCKlist[rd.B_Type_NNext[player]];
+	} else if(rd.B_Type_Count[player] == 2)
+	{
+		NextBlockList[0] = bt.BLOCKlist[(rd.B_Type_Next[player] + 2)%7];
+		NextBlockList[1] = bt.BLOCKlist[rd.B_Type_NNext[player]];
+		NextBlockList[2] = bt.BLOCKlist[(rd.B_Type_NNext[player] + 1)%7];
+	}
+
+	if(!bt.getBlockXYArray(tempXYArray, NextBlockList[0], 0))
+	{// draw next block
+		for(var i=0; i<4; i++)
+		{
+			const bX = 18 + tempXYArray[i*2];
+			const bY = 6 + tempXYArray[i*2 + 1];
+			rd.Fill(bX, bY, bt.BLOCK_O, player);
+		}
+	}
+	if(!bt.getBlockXYArray(tempXYArray, NextBlockList[1], 0))
+	{// draw nnext block
+		for(var i=0; i<4; i++)
+		{
+			const bX = 18 + tempXYArray[i*2];
+			const bY = 12 + tempXYArray[i*2 + 1];
+			rd.Fill(bX, bY, bt.BLOCK_O, player);
+		}
+	}
+	if(!bt.getBlockXYArray(tempXYArray, NextBlockList[2], 0))
+	{// draw nnnext block
+		for(var i=0; i<4; i++)
+		{
+			const bX = 18 + tempXYArray[i*2];
+			const bY = 18 + tempXYArray[i*2 + 1];
+			rd.Fill(bX, bY, bt.BLOCK_O, player);
+		}
+	}
+}
+
+function DrawHoldBlock(player)
+{
+	const tempXYArray = EUDArray(8);
+	RemoveUnitAt(All, bt.BLOCK_O, PlayerView[player]+1, $P8);
+	if(!bt.getBlockXYArray(tempXYArray, rd.B_Type_Hold[player], 0))
+	{// draw hold block
+		for(var i=0; i<4; i++)
+		{
+			const bX = -8 + tempXYArray[i*2];
+			const bY = 6 + tempXYArray[i*2 + 1];
+			rd.Fill(bX, bY, bt.BLOCK_O, $P8);
+		}
+	}
+}
+
+function DoPowerDown(player)
+{
+	//const tempXYArray = EUDArray(8);
+	//bt.getBlockXYArray(tempXYArray, rd.B_Type[player], rd.B_Rotation[player]);
+	while(1)
+	{// drop as u can
+		var stop = 0;
+		for(var i=0; i<4; i++)
+		{
+			const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+			const bY = (rd.B_arrayY[player]+1) + blockXYArray[i*2 + 1];
+			if(IsOutSide(bX, bY))
+				break;
+			if(IsCollide(bX, bY, rd.B_Type[player], player))
+			{
+				stop = 1;
+				break;
+			}
+		}
+		if(stop) break;
+		rd.B_arrayY[player] = rd.B_arrayY[player] + 1;
+	}
+	SetDeaths(player, SetTo, 1, NewBlockFlag); // need new block
+	for(var i=0; i<4; i++)
+	{// mark block to board
+		const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+		const bY = rd.B_arrayY[player] + blockXYArray[i*2 + 1];
+		rd.setPlayArea(player, bX, bY, 2);
+	}
+	SetDeaths(player, SetTo, 1, UpdateFlag);
+}
+
+function DoAutoDown(player)
+{
+	if(!bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]))
+	{
+		for(var i=0; i<4; i++)
+		{// delete previous block
+			const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+			const bY = rd.B_arrayY[player] + blockXYArray[i*2 + 1];
+			rd.setPlayArea(player, bX, bY, 0);
+		}
+	}
+	const m = IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player] +1, rd.B_Type[player], rd.B_Rotation[player]);
+	if(m == 0) 
+	{// movable
+		rd.B_arrayY[player] = rd.B_arrayY[player] +1;
+	}
+	else if (m == 2)
+	{// collide
+		SetDeaths(player, SetTo, 1, NewBlockFlag); // need new block
+	}
+	for(var i=0; i<4; i++)
+	{// mark block to board
+		const bX = rd.B_arrayX[player] + blockXYArray[i*2];
+		const bY = rd.B_arrayY[player] + blockXYArray[i*2 + 1];
+		if(Deaths(player, Exactly, 1, NewBlockFlag)) // stuck
+			rd.setPlayArea(player, bX, bY, 2);
+		else
+			rd.setPlayArea(player, bX, bY, rd.B_Type[player]);
+	}
+	//SetDeaths(player, SetTo, 1, UpdateFlag);
+}
+
+function SoloMsg()
+{
+	if(playerexist(0) && Deaths(0, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x08 빨강\x1b이 \x04마지막\x1b까지 남았습니다.");
+    else if(playerexist(1) && Deaths(1, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x0e 파랑\x1b이 \x04마지막\x1b까지 남았습니다.");
+    else if(playerexist(2) && Deaths(2, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x0f 연두\x1b가 \x04마지막\x1b까지 남았습니다.");
+    else if(playerexist(3) && Deaths(3, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x10 보라\x1b가 \x04마지막\x1b까지 남았습니다.");
+    else if(playerexist(4) && Deaths(4, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x11 주황\x1b이 \x04마지막\x1b까지 남았습니다.");
+    else if(playerexist(5) && Deaths(5, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x15 똥색\x1b이 \x04마지막\x1b까지 남았습니다.");
+}

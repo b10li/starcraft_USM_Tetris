@@ -1,0 +1,81 @@
+Ver0.8.72
+True
+True
+True
+False
+False
+True
+0
+EndSetting
+
+
+StartGRP
+EndGRP
+StartedsText
+
+EndedsText
+StartButtonSet
+EndButtonSet
+Startwire
+Endwire
+Startbin
+Endbin
+StartTrigger
+SetMemory(0x51833C, SetTo, 23527425);
+SetMemory(0x518364, SetTo, 15269890);
+SetMemory(0x518378, SetTo, 25296899);
+SetMemory(0x51838C, SetTo, 25362436);
+SetMemory(0x5183A0, SetTo, 25493509);
+SetMemory(0x6617D0, SetTo, 327685);
+SetMemory(0x6617D4, SetTo, 327685);
+SetMemory(0x6617D8, SetTo, 327685);
+SetMemory(0x6617DC, SetTo, 327685);
+SetMemory(0x661940, SetTo, 327685);
+SetMemory(0x661944, SetTo, 327685);
+SetMemory(0x661BC8, SetTo, 327685);
+SetMemory(0x661BCC, SetTo, 327685);
+SetMemory(0x661BD0, SetTo, 327685);
+SetMemory(0x661BD4, SetTo, 327685);
+SetMemory(0x661E80, SetTo, 327685);
+SetMemory(0x661E84, SetTo, 327685);
+SetMemory(0x661E88, SetTo, 327685);
+SetMemory(0x661E8C, SetTo, 327685);
+SetMemory(0x661E90, SetTo, 327685);
+SetMemory(0x661E94, SetTo, 327685);
+SetMemory(0x661E98, SetTo, 327685);
+SetMemory(0x661E9C, SetTo, 327685);
+SetMemory(0x661EA0, SetTo, 327685);
+SetMemory(0x661EA4, SetTo, 327685);
+SetMemory(0x662864, SetTo, 655370);
+SetMemory(0x662868, SetTo, 655370);
+SetMemory(0x66291C, SetTo, 655370);
+SetMemory(0x662A60, SetTo, 655370);
+SetMemory(0x662A64, SetTo, 655370);
+SetMemory(0x662BBC, SetTo, 655370);
+SetMemory(0x662BC0, SetTo, 655370);
+SetMemory(0x662BC4, SetTo, 655370);
+SetMemory(0x662BC8, SetTo, 655370);
+SetMemory(0x662BCC, SetTo, 655370);
+SetMemory(0x6640A8, SetTo, 402720832);
+SetMemory(0x664100, SetTo, 402720768);
+SetMemory(0x664180, SetTo, 1476413448);
+SetMemory(0x664184, SetTo, 402720768);
+SetMemory(0x66418C, SetTo, 404817920);
+SetMemory(0x6641BC, SetTo, 404817984);
+SetMemory(0x6644F8, SetTo, 1267303758);
+SetMemory(0x664524, SetTo, 805571847);
+SetMemory(0x664578, SetTo, 370213121);
+SetMemory(0x6645CC, SetTo, 25999285);
+SetMemory(0x6645D0, SetTo, 16877057);
+SetMemory(0x668E30, SetTo, 425);
+SetMemory(0x669FB4, SetTo, 268435456);
+SetMemory(0x669FB8, SetTo, 218103808);
+SetMemory(0x66E864, SetTo, 65536);
+SetMemory(0x66E944, SetTo, 256);
+SetMemory(0x66E9EC, SetTo, 65792);
+SetMemory(0x66E9F0, SetTo, 65792);
+SetMemory(0x66EFD8, SetTo, 89);
+SetMemory(0x66F284, SetTo, 89);
+SetMemory(0x66F288, SetTo, 89);
+SetMemory(0x66F294, SetTo, 89);
+SetMemory(0x6CA318, SetTo, 19333250);
