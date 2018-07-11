@@ -29,10 +29,15 @@ function DatEdit()
 	ImageDat(399, 16); // P gas orb 1, stuck blocks, hallu
 	ImageDat(400, 0); // P gas orb 2, stuck blocks, default
 	ImageDat(5, 0); // broodling, obstackle blocks, 
+	ImageDat(398, 15); // T gas orb 2, stuck blocks, shadow
+
+	//dwwrite(0x666778 + 34000 + 404 * 4, 89);
+	//bwrite(0x666778 + 14000 + 404 * 1, 10);
 
 	for(var i=0; i<7; i++)
 		UnitDat(bt.BLOCKlist[i], 134); // to P gas orb 2
 	UnitDat(2, 133); // to P gas orb 1
 	UnitDat(1, 1); // to broodling
 	UnitDat(47, 48); // to scarb
+	UnitDat(34, 132); // to tank
 }

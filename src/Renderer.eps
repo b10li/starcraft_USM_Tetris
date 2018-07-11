@@ -22,10 +22,16 @@ const B_Type_Count = EUDArray(6); // 블록 교체 카운트
 const B_Type_Hold = EUDArray(6); // 블록 저장
 
 const PlayArea = EUDArray(size_X * size_Y *6); // 현재 게임판
+const PlayerView = [$L('P1'), $L('P2'), $L('P3'), $L('P4'), $L('P5'), $L('P6')];
 
-const B_arrayX = EUDArray(6); // 블록 배열 x,y
+// 블록 배열 x,y
+const B_arrayX = EUDArray(6); 
 const B_arrayY = EUDArray(6);
-//Renderer, main 동시선언 
+// 블록 배열 x,y
+const G_arrayX = EUDArray(6);
+const G_arrayY = EUDArray(6);
+const G_Type = EUDArray(6);
+const G_Rotation = EUDArray(6);
 
 const KilledLine = EUDArray(4*6);
 const fillLoc = $L('draw');
@@ -101,6 +107,8 @@ function Fill(x, y, blockType, player)
             CreateUnitWithProperties(1, 2, fillLoc + 1, $P7, UnitProperty(invincible = true));
         else if(blockType == 3) // obstacle block
             CreateUnitWithProperties(1, 1, fillLoc + 1, $P8, UnitProperty(invincible = true));
+        else if(blockType == 4) // ghost block
+            CreateUnitWithProperties(1, 34, fillLoc + 1, $P8, UnitProperty(invincible = true));
         else // active
             CreateUnitWithProperties(1, blockType, fillLoc + 1, player, UnitProperty(invincible = true));
     }

@@ -19,6 +19,7 @@ import EUDEdit;
 // get block shape, global for optimization
 const blockXYArray = EUDArray(8);
 
+const GhostFlag = 96;
 const GameFlag = 97;
 const SoloFlag = 221;
 const NewBlockFlag = 225;
@@ -30,8 +31,6 @@ const UpdateHoldFlag = 198;
 
 const DeathTimer = 224;
 var MaximumTime = 48;
-
-const PlayerView = [$L('P1'), $L('P2'), $L('P3'), $L('P4'), $L('P5'), $L('P6')];
 
 function LeaderBoardMSG();
 function NewTetris(player);
@@ -45,6 +44,7 @@ function DeathCountDown(maxTime);
 function DrawNextBlock(player);
 function DrawHoldBlock(player);
 function SoloMsg();
+function MakeGhost(player);
 // -------------------------------------------------------------------------------------
 function onPluginStart()
 {
@@ -60,13 +60,12 @@ function onPluginStart()
 		rd.B_Type_Next[player] = rand()%7;
 		rd.FillFloor(player);
 		ct.printP(player, '\x13\x0710초 뒤 시작');
-		CenterView(PlayerView[player]+1);
+		CenterView(rd.PlayerView[player]+1);
 	}
 	EUDEndPlayerLoop();
 	LeaderBoardMSG();
 	SetCountdownTimer(SetTo, 10);
 }
-
 
 function beforeTriggerExec() 
 {// main code
@@ -93,14 +92,13 @@ function beforeTriggerExec()
 		ct.printP(player, '　　　\x1b내리기: \x07SPACE');
 		
     	rd.MapOffset(player); // for render & checkline
-	    
 	    for(var i=6; i>0; i--)
 	    {
 	    	if(Deaths(player, Exactly, i, rd.DamnLineFlag))
 	    	{// attack alarm
-	    		if(!Bring($P7, Exactly, i, 36, PlayerView[player]+1))
+	    		if(!Bring($P7, Exactly, i, 36, rd.PlayerView[player]+1))
 	    		{
-	    			GiveUnits(i, 36, $P8, PlayerView[player]+1, $P7);
+	    			GiveUnits(i, 36, $P8, rd.PlayerView[player]+1, $P7);
 	    			break;
 	    		}
 	    	}
@@ -122,7 +120,7 @@ function beforeTriggerExec()
 		    		rd.CreateLine(player);
 		    		SetDeaths(player, SetTo, 1, UpdateFlag);
 		    		// reset alarm
-		    		GiveUnits(1, 36, $P7, PlayerView[player]+1, $P8);
+		    		GiveUnits(1, 36, $P7, rd.PlayerView[player]+1, $P8);
 		    	}
 		    	else
 		    		break;
@@ -138,10 +136,10 @@ function beforeTriggerExec()
 	    	rd.CheckLine(player); // line checker
 	    	LeaderBoardMSG(); // renew leaderboard
 	    	rd.InitBXY(player); // new block location
-	    	RemoveUnitAt(All, '(any unit)', PlayerView[player]+1, player);
+	    	RemoveUnitAt(All, '(any unit)', rd.PlayerView[player]+1, player);
 			NewTetris(player); // new block
 			DrawNextBlock(player);
-
+			SetDeaths(player, SetTo, 1, GhostFlag);
 			SetDeaths(player, SetTo, 1, UpdateFlag);
 	    }
 
@@ -164,6 +162,11 @@ function beforeTriggerExec()
 	    	SetDeaths(player, SetTo, 0, PowerDownFlag);
 	    	DoPowerDown(player);
 	    }
+	    if(Deaths(player, Exactly, 1, GhostFlag))
+	    {
+	    	SetDeaths(player, SetTo, 0, GhostFlag);
+	    	MakeGhost(player);
+	    }
 
     	if(Deaths(player, Exactly, 1, UpdateFlag))
     	{// renew board
@@ -174,8 +177,8 @@ function beforeTriggerExec()
 		if(Deaths(player, Exactly, 1, EndGameFlag))
     	{// game over
     		SetDeaths(player, SetTo, 2, EndGameFlag);
-    		GiveUnits(All, '(any unit)', player, PlayerView[player]+1, $P12);
-	    	GiveUnits(All, '(men)', $AllPlayers, PlayerView[player]+1, $P12);
+    		GiveUnits(All, '(any unit)', player, rd.PlayerView[player]+1, $P12);
+	    	GiveUnits(All, '(men)', $AllPlayers, rd.PlayerView[player]+1, $P12);
     	}
     }
 
@@ -190,8 +193,6 @@ function beforeTriggerExec()
     	SetCountdownTimer(SetTo, 60);
     	if(MaximumTime > 8)
     	{
-    		
-    		
     		EUDPlayerLoop()();
     		ct.printError(getcurpl()); 
     		ct.chatprint(12,'\x07속도가 빨라집니다.'); 
@@ -279,8 +280,10 @@ function IsOutSide(bX, bY)
 
 function IsCollide(bX, bY, blockType, player)
 {
-	if(rd.getPlayArea(player, bX, bY) != blockType 
-		&& rd.getPlayArea(player, bX, bY))
+	const datblock = rd.getPlayArea(player, bX, bY);
+	if(datblock // has block
+		&& datblock != blockType
+		&& datblock != bt.GHOST_B)
 		return true;
 	else
 		return false;
@@ -383,21 +386,21 @@ function KeyControl(player)
 			else if(!IsStuck(player, rd.B_arrayX[player]+1, rd.B_arrayY[player], rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
 			{// ro + direction
 				rd.B_arrayX[player] = rd.B_arrayX[player] +1;
-				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				rd.B_Rotation[player] = (4 + rd.B_Rotation[player] - 1)%4;
 				// renew block 
 				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
 			}
 			else if(!IsStuck(player, rd.B_arrayX[player]-1, rd.B_arrayY[player], rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
 			{// ro + direction
 				rd.B_arrayX[player] = rd.B_arrayX[player] -1;
-				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				rd.B_Rotation[player] = (4 + rd.B_Rotation[player] - 1)%4;
 				// renew block 
 				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
 			}
 			else if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player]+1, rd.B_Type[player], (4 + rd.B_Rotation[player] - 1)%4 ))
 			{// ro + direction
 				rd.B_arrayY[player] = rd.B_arrayY[player] +1;
-				rd.B_Rotation[player] = (rd.B_Rotation[player] + 1)%4;
+				rd.B_Rotation[player] = (4 + rd.B_Rotation[player] - 1)%4;
 				// renew block 
 				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], rd.B_Rotation[player]);
 			}
@@ -420,16 +423,14 @@ function KeyControl(player)
 		{// Q - Hold
 			if(rd.B_Type_Hold[player])
 			{// check placeability
-				//if(!IsStuck(player, rd.B_arrayX[player], rd.B_arrayY[player], rd.B_Type_Hold[player], 0))
-				//{// swap and get block
-					rd.InitBXY(player); // new block location
-					const temp = rd.B_Type[player];
-					rd.B_Type[player] = rd.B_Type_Hold[player];
-					rd.B_Type_Hold[player] = temp;
-					bt.getBlockXYArray(blockXYArray, rd.B_Type[player], 0);
-					rd.B_Rotation[player] = 0;
-					SetDeaths(player, SetTo, 1, UpdateHoldFlag);
-				//}
+				rd.InitBXY(player); // new block location
+				const temp = rd.B_Type[player];
+				rd.B_Type[player] = rd.B_Type_Hold[player];
+				rd.B_Type_Hold[player] = temp;
+				bt.getBlockXYArray(blockXYArray, rd.B_Type[player], 0);
+				rd.B_Rotation[player] = 0;
+				SetDeaths(player, SetTo, 1, GhostFlag);
+				SetDeaths(player, SetTo, 1, UpdateHoldFlag);
 			} else 
 			{ // empty hold
 				rd.B_Type_Hold[player] = rd.B_Type[player];
@@ -437,9 +438,7 @@ function KeyControl(player)
 				SetDeaths(player, SetTo, 1, NewBlockFlag);
 				return 1;
 			}
-
 		}
-
 		for(var i=0; i<4; i++)
 		{// mark block to board
 			const bX = rd.B_arrayX[player] + blockXYArray[i*2];
@@ -451,6 +450,7 @@ function KeyControl(player)
 			else
 				rd.setPlayArea(player, bX, bY, rd.B_Type[player]);
 		}
+		SetDeaths(player, SetTo, 1, GhostFlag);
 		return 1;
 	}
 	return 0;
@@ -515,7 +515,7 @@ function DrawNextBlock(player)
 function DrawHoldBlock(player)
 {
 	const tempXYArray = EUDArray(8);
-	RemoveUnitAt(All, bt.BLOCK_O, PlayerView[player]+1, $P8);
+	RemoveUnitAt(All, bt.BLOCK_O, rd.PlayerView[player]+1, $P8);
 	if(!bt.getBlockXYArray(tempXYArray, rd.B_Type_Hold[player], 0))
 	{// draw hold block
 		for(var i=0; i<4; i++)
@@ -589,6 +589,7 @@ function DoAutoDown(player)
 			rd.setPlayArea(player, bX, bY, rd.B_Type[player]);
 	}
 	//SetDeaths(player, SetTo, 1, UpdateFlag);
+	SetDeaths(player, SetTo, 1, GhostFlag);
 }
 
 function SoloMsg()
@@ -599,4 +600,51 @@ function SoloMsg()
     else if(playerexist(3) && Deaths(3, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x10 보라\x1b가 \x04마지막\x1b까지 남았습니다.");
     else if(playerexist(4) && Deaths(4, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x11 주황\x1b이 \x04마지막\x1b까지 남았습니다.");
     else if(playerexist(5) && Deaths(5, Exactly, 0, EndGameFlag)) ct.printP(ct.cp,"\x13 \x15 똥색\x1b이 \x04마지막\x1b까지 남았습니다.");
+}
+
+function MakeGhost(player)
+{
+	if(!bt.getBlockXYArray(blockXYArray, rd.G_Type[player], rd.G_Rotation[player]))
+	{
+		for(var i=0; i<4; i++)
+		{// delete previous block
+			const bX = rd.G_arrayX[player] + blockXYArray[i*2];
+			const bY = rd.G_arrayY[player] + blockXYArray[i*2 + 1];
+			if(rd.getPlayArea(player, bX, bY) == bt.GHOST_B)
+				rd.setPlayArea(player, bX, bY, 0);
+		}
+	}
+	rd.G_Type[player] = rd.B_Type[player];
+	rd.G_Rotation[player] = rd.B_Rotation[player];
+	rd.G_arrayX[player] = rd.B_arrayX[player];
+	rd.G_arrayY[player] = rd.B_arrayY[player];
+	if(bt.getBlockXYArray(blockXYArray, rd.G_Type[player], rd.G_Rotation[player]))
+		return;
+	while(1)
+	{// drop as u can
+		var stop = 0;
+		for(var i=0; i<4; i++)
+		{
+			const bX = rd.G_arrayX[player] + blockXYArray[i*2];
+			const bY = (rd.G_arrayY[player] + 1) + blockXYArray[i*2 + 1];
+			if(IsOutSide(bX, bY))
+				break;
+			if(IsCollide(bX, bY, rd.G_Type[player], player))
+			{
+				stop = 1;
+				break;
+			}
+		}
+		if(stop) break;
+		rd.G_arrayY[player] = rd.G_arrayY[player] + 1;
+	}
+	for(var i=0; i<4; i++)
+	{// draw block to board
+		const bX = rd.G_arrayX[player] + blockXYArray[i*2];
+		const bY = rd.G_arrayY[player] + blockXYArray[i*2 + 1];
+
+		if(!rd.getPlayArea(player, bX, bY)) // if empty
+			rd.setPlayArea(player, bX, bY, bt.GHOST_B);
+	}
+	SetDeaths(player, SetTo, 1, UpdateFlag);
 }
