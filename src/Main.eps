@@ -531,7 +531,7 @@ function DoPowerDown(player)
 {
 	//const tempXYArray = EUDArray(8);
 	//bt.getBlockXYArray(tempXYArray, rd.B_Type[player], rd.B_Rotation[player]);
-	while(1)
+	for(var j=0; j<rd.size_Y; j++)
 	{// drop as u can
 		var stop = 0;
 		for(var i=0; i<4; i++)
@@ -620,7 +620,7 @@ function MakeGhost(player)
 	rd.G_arrayY[player] = rd.B_arrayY[player];
 	if(bt.getBlockXYArray(blockXYArray, rd.G_Type[player], rd.G_Rotation[player]))
 		return;
-	while(1)
+	for(var j=0; j<rd.size_Y; j++)
 	{// drop as u can
 		var stop = 0;
 		for(var i=0; i<4; i++)

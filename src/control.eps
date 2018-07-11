@@ -1,5 +1,4 @@
 
-const KeyCount = 98;
 const KeyUnit = 200;
 // 방향키는 연속
 // 스페기는 연속 방지
@@ -33,19 +32,6 @@ function KeyRecog(player)
 	else if(!keyboard && Switch(player, Set))
 	{// key up
 		SetSwitch(player, Clear);
-	}
-
-	if(keyboard)
-	{// resend input
-		if(Deaths(player, AtLeast, 3, KeyCount))
-		{
-			SetDeaths(player, SetTo, 0, KeyCount);
-			if(keyboard == 2)
-				return 2;
-			if(keyboard == 8)
-				return 8;
-		}
-		else SetDeaths(player, Add, 1, KeyCount);
 	}
 	return 0;
 }

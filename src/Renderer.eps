@@ -21,7 +21,12 @@ const B_Type_NNext = EUDArray(6); // 다다음 블록
 const B_Type_Count = EUDArray(6); // 블록 교체 카운트
 const B_Type_Hold = EUDArray(6); // 블록 저장
 
-const PlayArea = EUDArray(size_X * size_Y *6); // 현재 게임판
+const PlayArea0 = EUDArray(size_X * size_Y); // 현재 게임판
+const PlayArea1 = EUDArray(size_X * size_Y); // 현재 게임판
+const PlayArea2 = EUDArray(size_X * size_Y); // 현재 게임판
+const PlayArea3 = EUDArray(size_X * size_Y); // 현재 게임판
+const PlayArea4 = EUDArray(size_X * size_Y); // 현재 게임판
+const PlayArea5 = EUDArray(size_X * size_Y); // 현재 게임판
 const PlayerView = [$L('P1'), $L('P2'), $L('P3'), $L('P4'), $L('P5'), $L('P6')];
 
 // 블록 배열 x,y
@@ -73,12 +78,22 @@ function MapOffset(player)
 
 function setPlayArea(player, x, y, value)
 {
-    PlayArea[x + y * size_X  + (size_X*size_Y)*player] = value;
+    if(player == 0) PlayArea0[x + y * size_X] = value;
+    else if(player == 1) PlayArea1[x + y * size_X] = value;
+    else if(player == 2) PlayArea2[x + y * size_X] = value;
+    else if(player == 3) PlayArea3[x + y * size_X] = value;
+    else if(player == 4) PlayArea4[x + y * size_X] = value;
+    else if(player == 5) PlayArea5[x + y * size_X] = value;
 }
 
 function getPlayArea(player, x, y)
 {
-    return PlayArea[x + y * size_X  + (size_X*size_Y)*player];
+    if(player == 0) return PlayArea0[x + y * size_X];
+    else if(player == 1) return PlayArea1[x + y * size_X];
+    else if(player == 2) return PlayArea2[x + y * size_X];
+    else if(player == 3) return PlayArea3[x + y * size_X];
+    else if(player == 4) return PlayArea4[x + y * size_X];
+    else if(player == 5) return PlayArea5[x + y * size_X];
 }
 
 function Fill(x, y, blockType);
